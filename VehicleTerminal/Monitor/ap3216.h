@@ -12,8 +12,7 @@ Copyright © Deng Zhimao Co., Ltd. 1990-2030. All rights reserved.
 #include <QObject>
 #include <QTimer>
 
-class Ap3216c : public QObject
-{
+class Ap3216c : public QObject {
     Q_OBJECT
 
 public:
@@ -24,6 +23,7 @@ private:
     QString alsdata;
     QString psdata;
     QString irdata;
+
 public:
     QString alsData();
     QString psData();
@@ -32,8 +32,6 @@ public:
     QString readAlsData();
     QString readPsData();
     QString readIrData();
-
-
 };
 
-#endif // AP3216C_H
+#endif  // AP3216C_H

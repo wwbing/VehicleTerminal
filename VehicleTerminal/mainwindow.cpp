@@ -29,11 +29,18 @@ MainWindow::MainWindow(QWidget *parent)
     networkManage = new QNetworkAccessManager;
     request->setHeader(QNetworkRequest::ContentTypeHeader,QVariant("application/json"));
     connect(networkManage,SIGNAL(finished(QNetworkReply *)),this,SLOT(getSpeechResult(QNetworkReply *)));
-    SR = new SpeechRecognition();
-    SR->startSpeechRecognition();
-    connect(SR,SIGNAL(RecordFinished()),this,SLOT(on_handleRecord()));
+    AsrThread = new SpeechRecognition();
+    AsrThread->startSpeechRecognition();
+    connect(AsrThread,SIGNAL(RecordFinished()),this,SLOT(on_handleRecord()));
     connect(time,SIGNAL(timeout()),this,SLOT(on_timer_updateTime()));
     connect(dht11,SIGNAL(updateDht11Data(QString ,QString )),this,SLOT(on_update_humidity_temp(QString, QString)));
+    
+    // 手动连接按钮信号
+    connect(ui->pBtn_Setting, SIGNAL(clicked()), this, SLOT(on_pBtn_Setting_clicked()));
+    connect(ui->pBtn_Music, SIGNAL(clicked()), this, SLOT(on_pBtn_Music_clicked()));
+    connect(ui->pBtn_Weather, SIGNAL(clicked()), this, SLOT(on_pBtn_Weather_clicked()));
+    connect(ui->pBtn_Monitor, SIGNAL(clicked()), this, SLOT(on_pBtn_Monitor_clicked()));
+    connect(ui->pBtn_Map, SIGNAL(clicked()), this, SLOT(on_pBtn_Map_clicked()));
 
     connect(this,SIGNAL(SendCommandToMap(int)),baiduMap,SLOT(on_handleCommand(int)));
     connect(this,SIGNAL(SendCommandToMonitor(int)),monitor,SLOT(on_handleCommand(int)));

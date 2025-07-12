@@ -27,69 +27,63 @@ void CaptureThread::run()
     video_fd = open(VIDEO_DEV, O_RDWR);
     if (0 > video_fd) {
         printf("ERROR: failed to open video device %s\n", VIDEO_DEV);
-        return ;
+        return;
     }
 
-    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    fmt.fmt.pix.width = 1024;
-    fmt.fmt.pix.height = 600;
-    fmt.fmt.pix.colorspace = V4L2_COLORSPACE_SRGB;
+    fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    fmt.fmt.pix.width       = 1024;
+    fmt.fmt.pix.height      = 600;
+    fmt.fmt.pix.colorspace  = V4L2_COLORSPACE_SRGB;
     fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_RGB565;
 
     if (0 > ioctl(video_fd, VIDIOC_S_FMT, &fmt)) {
         printf("ERROR: failed to VIDIOC_S_FMT\n");
         close(video_fd);
-        return ;
+        return;
     }
 
-    req_bufs.count = VIDEO_BUFFER_COUNT;
-    req_bufs.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    req_bufs.count  = VIDEO_BUFFER_COUNT;
+    req_bufs.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     req_bufs.memory = V4L2_MEMORY_MMAP;
 
     if (0 > ioctl(video_fd, VIDIOC_REQBUFS, &req_bufs)) {
         printf("ERROR: failed to VIDIOC_REQBUFS\n");
-        return ;
+        return;
     }
 
-    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_MMAP;
     for (n_buf = 0; n_buf < VIDEO_BUFFER_COUNT; n_buf++) {
-
         buf.index = n_buf;
         if (0 > ioctl(video_fd, VIDIOC_QUERYBUF, &buf)) {
             printf("ERROR: failed to VIDIOC_QUERYBUF\n");
-            return ;
+            return;
         }
 
         bufs_info[n_buf].length = buf.length;
-        bufs_info[n_buf].start = mmap(NULL, buf.length,
-                                      PROT_READ | PROT_WRITE, MAP_SHARED,
-                                      video_fd, buf.m.offset);
+        bufs_info[n_buf].start  = mmap(NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, video_fd, buf.m.offset);
         if (MAP_FAILED == bufs_info[n_buf].start) {
             printf("ERROR: failed to mmap video buffer, size 0x%x\n", buf.length);
-            return ;
+            return;
         }
     }
 
     for (n_buf = 0; n_buf < VIDEO_BUFFER_COUNT; n_buf++) {
-
         buf.index = n_buf;
         if (0 > ioctl(video_fd, VIDIOC_QBUF, &buf)) {
             printf("ERROR: failed to VIDIOC_QBUF\n");
-            return ;
+            return;
         }
     }
 
     type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (0 > ioctl(video_fd, VIDIOC_STREAMON, &type)) {
         printf("ERROR: failed to VIDIOC_STREAMON\n");
-        return ;
+        return;
     }
 
     while (startFlag) {
-
         for (n_buf = 0; n_buf < VIDEO_BUFFER_COUNT; n_buf++) {
-
             buf.index = n_buf;
 
             if (0 > ioctl(video_fd, VIDIOC_DQBUF, &buf)) {
@@ -97,11 +91,11 @@ void CaptureThread::run()
                 return;
             }
 
-            QImage qImage((unsigned char*)bufs_info[n_buf].start, fmt.fmt.pix.width, fmt.fmt.pix.height, QImage::Format_RGB16);
+            QImage qImage((unsigned char*)bufs_info[n_buf].start, fmt.fmt.pix.width, fmt.fmt.pix.height,
+                          QImage::Format_RGB16);
 
             /* 是否开启本地显示*/
-            if (startLocalDisplay)
-                emit imageReady(qImage);
+            if (startLocalDisplay) emit imageReady(qImage);
 
             if (0 > ioctl(video_fd, VIDIOC_QBUF, &buf)) {
                 printf("ERROR: failed to VIDIOC_QBUF\n");
@@ -110,7 +104,7 @@ void CaptureThread::run()
         }
     }
 
-    msleep(800);//at lease 650
+    msleep(800);  // at lease 650
     for (int i = 0; i < VIDEO_BUFFER_COUNT; i++) {
         munmap(bufs_info[i].start, buf.length);
     }

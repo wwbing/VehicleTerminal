@@ -6,9 +6,8 @@ Monitor * Monitor::monitor = nullptr;
 Monitor * Monitor::getInstance()
 {
     if(monitor==nullptr)
-        return new Monitor();
-   else
-        return monitor;
+        monitor = new Monitor();
+    return monitor;
 }
 
 Monitor::Monitor(QWidget *parent) :

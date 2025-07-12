@@ -1,220 +1,150 @@
-# 智能车载终端系统
+# 🚗 智能车载终端系统
 
-## 项目简介
+[![C++](https://img.shields.io/badge/Language-C++-blue.svg)](https://isocpp.org/)
+[![Qt](https://img.shields.io/badge/Framework-Qt_5.15-green.svg)](https://www.qt.io/)
+[![CMake](https://img.shields.io/badge/Build-CMake-orange.svg)](https://cmake.org/)
+[![Platform](https://img.shields.io/badge/Platform-Embedded_Linux-yellow.svg)](https://www.linux.org/)
 
-智能车载终端系统是一个基于Qt框架开发的综合性车载信息娱乐系统，集成了多种实用功能，为驾驶者提供全方位的车载体验。
+这是一个基于 **Qt 5.15** 框架和 **C++** 开发的嵌入式Linux智能车载终端（In-Vehicle Infotainment, IVI）系统。它集成了地图导航、多媒体娱乐、环境监控和语音助手等多种功能，旨在为用户提供现代化、智能化的车载交互体验。
 
-## 主要功能
+## ✨ 主要功能
 
-### 🎵 音乐播放器
-- 支持本地音乐播放
-- 集成网易云音乐API，支持在线搜索和播放
-- 支持歌单播放、歌词显示
-- 美观的音乐播放界面
+- **🎵 音乐播放器**: 支持本地音乐扫描与播放，集成网易云音乐API，可进行在线搜索、播放和歌词显示。
+- **🗺️ 地图导航**: 集成百度地图服务，通过硬件GPS模块 (`/dev/ttymxc2`) 进行实时定位和导航。
+- **🌤️ 天气查询**: 调用网络API，提供实时的天气信息和天气预报。
+- **📹 环境监控**:
+    - **视频监控**: 通过摄像头进行实时视频采集。
+    - **环境感知**: 集成DHT11温湿度传感器和AP3216c环境光/距离传感器，实时显示环境数据。
+- **🎤 语音识别**: 支持语音指令，可控制音乐播放、地图导航等核心功能。
+- **⏰ 实用工具**: 包含美观的数字时钟和系统设置面板。
+- **👆 手势操作**: 主界面支持滑动切屏操作。
 
-### 🗺️ 地图导航
-- 集成百度地图API
-- GPS定位功能
-- 实时导航和路径规划
-- 支持UART串口通信
+## 🏛️ 系统架构
 
-### 🌤️ 天气信息
-- 实时天气查询和显示
-- 天气预报功能
-- 温湿度传感器数据采集（DHT11）
-- 美观的天气界面展示
+系统采用模块化设计，主窗口 (`MainWindow`) 作为入口，统一调度和管理各个功能模块。底层通过驱动直接与硬件交互，并通过网络API获取在线服务。
 
-### 📹 监控系统
-- 摄像头实时监控
-- 光线传感器（AP3216）集成
-- 环境监测功能
-- 支持视频录制
+```mermaid
+graph TD
+    subgraph "用户界面 (UI)"
+        A[MainWindow]
+    end
 
-### 🎤 语音识别
-- 语音命令控制
-- 实时语音识别
-- 支持多种语音指令
-- 集成网络语音识别API
+    subgraph "功能模块"
+        B["🎵 音乐播放器"]
+        C["🗺️ 地图导航"]
+        D["🌤️ 天气查询"]
+        E["📹 环境监控"]
+        F["🎤 语音识别"]
+        G["⚙️ 系统设置"]
+    end
 
-### ⏰ 时钟功能
-- 实时时钟显示
-- 日期时间同步
-- 简洁的时钟界面
+    subgraph "底层驱动与服务"
+        H["GPS模块 (/dev/ttymxc2)"]
+        I["温湿度传感器 (/dev/dht11)"]
+        J["环境光传感器 (I2C)"]
+        K["摄像头服务"]
+        L["网络API (天气/音乐)"]
+    end
 
-### ⚙️ 系统设置
-- 系统参数配置
-- 用户偏好设置
-- 界面个性化设置
+    A --> B
+    A --> C
+    A --> D
+    A --> E
+    A --> F
+    A --> G
 
-## 技术架构
-
-### 开发环境
-- **框架**: Qt 5/6
-- **语言**: C++
-- **编译器**: 支持C++11标准
-- **平台**: Linux嵌入式系统
-
-### 核心模块
-```
-VehicleTerminal/
-├── main.cpp                 # 主程序入口
-├── mainwindow.cpp/h/ui      # 主窗口界面
-├── settingwindow.cpp/h/ui   # 设置窗口
-├── clock.cpp/h/ui          # 时钟模块
-├── dht11.cpp/h             # 温湿度传感器
-├── speechrecognition.cpp/h  # 语音识别
-├── Music/                  # 音乐播放模块
-├── Map/                    # 地图导航模块
-├── Weather/                # 天气信息模块
-├── Monitor/                # 监控系统模块
-└── img/                    # 资源文件
+    B --> L
+    C --> H
+    D --> L
+    E --> I
+    E --> J
+    E --> K
+    F --> L
 ```
 
-### 硬件支持
-- **传感器**: DHT11温湿度传感器、AP3216光线传感器
-- **通信**: UART串口、I2C总线
-- **音频**: 音频录制和播放
-- **摄像头**: 视频采集和监控
-- **GPS**: 定位模块
+## 🛠️ 技术栈
 
-## 安装和运行
+- **核心框架**: Qt 5.15.16 (Core, Gui, Widgets, Multimedia, Network, SerialPort)
+- **编程语言**: C++11, C
+- **构建系统**: CMake
+- **依赖管理**: vcpkg & apt
+- **硬件接口**: `/dev` (串口, I2C), Video4Linux2 (V4L2)
+- **外部API**:
+    - 网易云音乐 API
+    - 百度地图 API
+    - 在线天气 API
 
-### 环境要求
-- Ubuntu 20.04 或更高版本
-- C++11 兼容的编译器
-- vcpkg 包管理器
+## 🚀 快速开始
 
-### 快速安装（推荐）
+请按照以下步骤在您的 **Ubuntu / Debian** 系统上设置、编译和运行本项目。
 
-#### 方法一：一键安装
+### 1. 安装系统依赖
+
+首先，运行脚本安装所有必需的系统库和工具，如 `build-essential`, `cmake`, `bison`, 以及 `X11` 和 `OpenGL` 的开发库。
+
 ```bash
-# 给脚本添加执行权限
-chmod +x setup_project.sh
-
-# 运行完整设置脚本
-./setup_project.sh
-```
-
-#### 方法二：分步安装
-```bash
-# 1. 安装系统依赖
 chmod +x install_dependencies.sh
-./install_dependencies.sh
+sudo ./install_dependencies.sh
+```
 
-# 2. 安装Qt5
+### 2. 安装Qt5库
+
+项目使用 `vcpkg` 来管理Qt5库。此脚本将自动通过vcpkg下载和编译Qt 5.15的核心模块。
+> **提示**: vcpkg 会自动缓存下载的源码和编译好的库。如果初次执行失败，修复依赖后再次运行此脚本会快很多。
+
+```bash
 chmod +x install_qt5.sh
 ./install_qt5.sh
+```
+> 如果遇到需要重建依赖的提示，请使用 `--recurse` 选项，脚本已为您配置好。
 
-# 3. 构建项目
+### 3. 编译项目
+
+一切准备就绪后，运行构建脚本。它将使用CMake来配置项目并进行编译。
+```bash
 chmod +x build.sh
 ./build.sh
 ```
 
-### 手动安装步骤
-1. 安装系统依赖：
-   ```bash
-   sudo apt update
-   sudo apt install -y build-essential cmake pkg-config bison flex
-   sudo apt install -y qt5-default qtbase5-dev qtmultimedia5-dev libqt5serialport5-dev
-   ```
+### 4. 运行程序
 
-2. 使用vcpkg安装Qt5：
-   ```bash
-   /home/wwbing/DownLoad/vcpkg/vcpkg install qt5-base qt5-multimedia qt5-serialport qt5-tools
-   ```
-
-3. 构建项目：
-   ```bash
-   mkdir build && cd build
-   cmake .. -DCMAKE_TOOLCHAIN_FILE=/home/wwbing/DownLoad/vcpkg/scripts/buildsystems/vcpkg.cmake
-   make -j$(nproc)
-   ```
-
-### 运行步骤
-1. 编译成功后，可执行文件位于 `build/bin/VehicleTerminal`
-2. 运行程序：
-   ```bash
-   ./build/bin/VehicleTerminal
-   ```
-3. 系统将启动主界面
-4. 通过界面按钮访问各个功能模块
-
-## 配置说明
-
-### 网络配置
-- 确保网络连接正常，用于天气查询和音乐下载
-- 配置网易云音乐API访问权限
-
-### 硬件配置
-- 连接DHT11传感器到指定GPIO引脚
-- 配置UART串口用于GPS通信
-- 连接摄像头设备
-- 配置音频设备
-
-### API配置
-项目使用以下外部API：
-- 网易云音乐API（音乐搜索和播放）
-- 百度地图API（地图和导航）
-- 天气API（天气信息查询）
-- 语音识别API（语音命令处理）
-
-## 项目结构
-
-```
-VehicleTerminal/
-├── 相关测试程序/           # 测试程序
-├── 设备树/                # 设备树文件
-├── 驱动/                  # 硬件驱动
-├── VehicleTerminal/       # 主程序源码
-│   ├── main.cpp
-│   ├── mainwindow.*
-│   ├── settingwindow.*
-│   ├── clock.*
-│   ├── dht11.*
-│   ├── speechrecognition.*
-│   ├── Music/            # 音乐模块
-│   ├── Map/              # 地图模块
-│   ├── Weather/          # 天气模块
-│   ├── Monitor/          # 监控模块
-│   └── img/              # 图片资源
-├── 运行智能车载终端步骤.docx
-├── 音乐下载API.txt
-└── README.md
+编译成功后，可执行文件将位于 `build/bin/` 目录下。
+```bash
+./build/bin/VehicleTerminal
 ```
 
-## 功能特色
+## 👨‍💻 开发者说明
 
-- **模块化设计**: 各功能模块独立，便于维护和扩展
-- **用户友好**: 直观的图形界面，易于操作
-- **实时性**: 支持实时数据采集和显示
-- **多媒体支持**: 完整的音频视频处理能力
-- **网络集成**: 丰富的在线服务集成
-- **硬件集成**: 完善的传感器和硬件支持
+### 代码结构
 
-## 开发说明
+- `VehicleTerminal/`: 项目主源码目录。
+    - `main.cpp`: 程序入口。
+    - `mainwindow.*`: 主窗口，UI和业务逻辑的核心。
+    - `Map/`, `Music/`, `Weather/`, `Monitor/`: 各个核心功能模块。
+    - `*.c`: C语言编写的底层硬件驱动接口。
+- `*.sh`: 用于安装和构建的Shell脚本。
+- `CMakeLists.txt`: 项目的构建配置文件。
+- `*.pro`: 原始的QMake项目文件，当前已迁移至CMake。
 
-### 代码规范
-- 遵循Qt编程规范
-- 使用C++11标准
-- 模块化设计，低耦合高内聚
-- 完善的错误处理机制
+### 开发环境配置 (Clangd)
 
-### 扩展开发
-- 新增功能模块可参考现有模块结构
-- 遵循项目的命名规范和代码风格
-- 添加相应的UI文件和资源文件
-- 更新项目配置文件
+为了获得最佳的开发体验（代码补全、语法检查），本项目已为 `clangd` 进行了优化配置。
 
-## 许可证
+1.  **生成编译数据库**: `build.sh` 脚本会自动在 `build/` 目录下生成 `compile_commands.json` 文件。
+2.  **符号链接**: 脚本还会在项目根目录创建一个指向该文件的符号链接，方便 `clangd` 查找。
+3.  **重启编辑器**: 首次构建后，请重启您的编辑器（如 VS Code / Cursor）以加载 `clangd` 配置。
 
-本项目仅供学习和研究使用。
+### 注意事项
 
-## 联系方式
-
-如有问题或建议，请通过以下方式联系：
-- 提交Issue到项目仓库
-- 发送邮件至项目维护者
-
+- **硬件依赖**: 本项目为嵌入式系统设计，部分功能（如GPS, 传感器）强依赖于特定的硬件设备文件（例如 `/dev/dht11`）。在非目标硬件上运行时，这些功能可能无法正常工作。代码中包含 `#if __arm__` 宏定义以在x86平台下提供模拟数据。
+- **API密钥**: 您可能需要自行替换代码中硬编码的API密钥或URL以使用在线服务。
+- **段错误调试**: 如果程序启动时遇到 `Segmentation fault`，通常是由于某个类的构造函数中指针未正确初始化或硬件模块初始化失败导致。请使用 `gdb` 进行调试：
+  ```bash
+  gdb ./build/bin/VehicleTerminal
+  (gdb) run
+  # 在程序崩溃后
+  (gdb) bt
+  ```
 ---
 
-**注意**: 使用前请确保硬件设备正确连接，网络环境正常，并配置相应的API密钥。 
+*这份 README 文档旨在提供清晰的项目指引。如果您有任何问题或建议，欢迎提交 Issue。* 

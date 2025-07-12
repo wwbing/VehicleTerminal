@@ -15,32 +15,30 @@ Copyright © Deng Zhimao Co., Ltd. 1990-2030. All rights reserved.
 #include <unistd.h>
 #include <QDebug>
 
-Ap3216c::Ap3216c(QObject *parent) : QObject (parent)
+Ap3216c::Ap3216c(QObject *parent) : QObject(parent)
 {
-
 }
 
 Ap3216c::~Ap3216c()
 {
-
 }
 
 QString Ap3216c::readIrData()
 {
 #if __arm__
     char const *filename = "/sys/class/misc/ap3216c/ir";
-    int err = 0;
+    int err              = 0;
     int fd;
     char buf[10];
 
     fd = open(filename, O_RDONLY);
-    if(fd < 0){
+    if (fd < 0) {
         close(fd);
         return "open file error!";
     }
 
     err = read(fd, buf, sizeof(buf));
-    if (err < 0){
+    if (err < 0) {
         close(fd);
         return "read data error!";
     }
@@ -58,18 +56,18 @@ QString Ap3216c::readPsData()
 {
 #if __arm__
     char const *filename = "/sys/class/misc/ap3216c/ps";
-    int err = 0;
+    int err              = 0;
     int fd;
     char buf[10];
 
     fd = open(filename, O_RDONLY);
-    if(fd < 0){
+    if (fd < 0) {
         close(fd);
         return "open file error!";
     }
 
     err = read(fd, buf, sizeof(buf));
-    if (err < 0){
+    if (err < 0) {
         close(fd);
         return "read data error!";
     }
@@ -87,18 +85,18 @@ QString Ap3216c::readAlsData()
 {
 #if __arm__
     char const *filename = "/sys/class/misc/ap3216c/als";
-    int err = 0;
+    int err              = 0;
     int fd;
     char buf[10];
 
     fd = open(filename, O_RDONLY);
-    if(fd < 0){
+    if (fd < 0) {
         close(fd);
         return "open file error!";
     }
 
     err = read(fd, buf, sizeof(buf));
-    if (err < 0){
+    if (err < 0) {
         close(fd);
         return "read data error!";
     }
@@ -126,4 +124,3 @@ QString Ap3216c::psData()
 {
     return psdata;
 }
-

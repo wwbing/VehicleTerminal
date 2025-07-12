@@ -35,17 +35,16 @@ Copyright © Deng Zhimao Co., Ltd. 2021-2030. All rights reserved.
 #include <QTime>
 #include <QUdpSocket>
 
-#define VIDEO_DEV			"/dev/video1"
-#define FB_DEV				"/dev/fb0"
-#define VIDEO_BUFFER_COUNT	3
+#define VIDEO_DEV          "/dev/video1"
+#define FB_DEV             "/dev/fb0"
+#define VIDEO_BUFFER_COUNT 3
 
 struct buffer_info {
     void *start;
     unsigned int length;
 };
 
-class CaptureThread : public QThread
-{
+class CaptureThread : public QThread {
     Q_OBJECT
 
 signals:
@@ -62,15 +61,16 @@ private:
     void run() override;
 
 public:
-    CaptureThread(QObject *parent = nullptr) {
+    CaptureThread(QObject *parent = nullptr)
+    {
         Q_UNUSED(parent);
     }
-public :
+
+public:
     void startThread()
     {
         startFlag = true;
-        if (!this->isRunning())
-            this->start();
+        if (!this->isRunning()) this->start();
     }
     void stopThread()
     {
@@ -80,20 +80,21 @@ public :
 
 public slots:
     /* 设置线程 */
-    void setThreadStart(bool start) {
+    void setThreadStart(bool start)
+    {
         startFlag = start;
         if (start) {
-            if (!this->isRunning())
-                this->start();
+            if (!this->isRunning()) this->start();
         } else {
             this->quit();
         }
     }
 
     /* 设置本地显示 */
-    void setLocalDisplay(bool start) {
+    void setLocalDisplay(bool start)
+    {
         startLocalDisplay = start;
     }
 };
 
-#endif // CAPTURE_THREAD_H
+#endif  // CAPTURE_THREAD_H
