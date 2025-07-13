@@ -1,3 +1,24 @@
-项目演示.mp4
-.cache
-build
+# 忽略大文件
+LLM_Voice_Flow/voice/models/
+LLM_Voice_Flow/tts/models/
+*.onnx
+*.bin
+*.model
+*.weights
+
+# 忽略构建文件
+build/
+.cache/
+*.o
+*.so
+*.a
+
+# 忽略IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 忽略系统文件
+.DS_Store
+Thumbs.db
