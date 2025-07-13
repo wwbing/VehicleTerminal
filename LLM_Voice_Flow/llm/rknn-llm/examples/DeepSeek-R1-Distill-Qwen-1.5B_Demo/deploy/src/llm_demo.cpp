@@ -1,17 +1,3 @@
-// Copyright (c) 2024 by Rockchip Electronics Co., Ltd. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 #include <string.h>
 #include <unistd.h>
 #include <string>
@@ -35,6 +21,7 @@ LLMHandle llmHandle = nullptr;
 zmq_component::ZmqServer server;
 zmq_component::ZmqClient client("tcp://localhost:7777");
 
+//截断后的字符串直接传给TTS进行处理，加快首响应速度
 std::wstring buffer_; 
 static const std::set<wchar_t> split_chars = {
     L'：',   
@@ -46,76 +33,16 @@ static const std::set<wchar_t> split_chars = {
     L'？'   
 };
 
+/*
+    utf8和宽字符转换原理：
+        本地处理都是转换为宽字符串再进行处理，不然无法区分中英文，会乱码
+        传给LLM或者TTS处理 亦或者 ZMQ通信 都是utf8的格式
+*/
 bool is_valid_utf8_continuation(uint8_t c)
 {
     return (c & 0xC0) == 0x80; 
 }
 
-// std::string extract_after_think(const std::string &input)
-// {
-//     const std::string start_tag = "<think>";
-//     const std::string end_tag = "</think>";
-
-//     size_t start_pos = input.find(start_tag);
-//     size_t end_pos = input.find(end_tag);
-
-//     std::string result;
-
-//     if (start_pos != std::string::npos && end_pos != std::string::npos && end_pos > start_pos)
-//     {
-//         result = input.substr(start_pos + start_tag.length(), end_pos - start_pos - start_tag.length());
-//     } else if (end_pos != std::string::npos) {
-//         result = input.substr(end_pos + end_tag.length());
-//     } else {
-//         result = input;
-//     }
-
-//     // 定义要过滤的字符
-//     const std::string punct = " \t\n\r*#@$%^&，。：、；！？【】（）“”‘’";
-
-//     // 安全过滤：保护 UTF-8 多字节字符
-//     std::string filtered;
-//     for (size_t i = 0; i < result.size();)
-//     {
-//         uint8_t c = result[i];
-//         if (punct.find(c) != std::string::npos)
-//         {
-//             i++;
-//         }
-//         else
-//         {
-//             size_t char_len = 1;
-//             if ((c & 0xE0) == 0xC0)
-//                 char_len = 2;
-//             else if ((c & 0xF0) == 0xE0)
-//                 char_len = 3;
-//             else if ((c & 0xF8) == 0xF0)
-//                 char_len = 4;
-
-//             bool is_valid = true;
-//             for (size_t j = 1; j < char_len; ++j)
-//             {
-//                 if (i + j >= result.size() || !is_valid_utf8_continuation(result[i + j]))
-//                 {
-//                     is_valid = false;
-//                     break;
-//                 }
-//             }
-
-//             if (is_valid)
-//             {
-//                 filtered.append(result.substr(i, char_len));
-//                 i += char_len;
-//             }
-//             else
-//             {
-//                 i++;
-//             }
-//         }
-//     }
-
-//     return filtered;
-// }
 
 std::wstring extract_after_think(const std::wstring &input)
 {
@@ -182,12 +109,12 @@ void exit_handler(int signal)
 }
 
 void send_response(const std::wstring& text) {
-    // std::string response_str = extract_after_think(wstring_to_utf8(text));
     std::string response_str = wstring_to_utf8(extract_after_think(text));
     auto response = client.request(response_str);
     std::cout << "[tts -> llm] received : " << response << std::endl;
 }
 
+//模型通过该回调函数吐字
 void callback(RKLLMResult *result, void *userdata, LLMCallState state)
 {
 
@@ -238,21 +165,7 @@ void callback(RKLLMResult *result, void *userdata, LLMCallState state)
 
         printf("%s", result->text);
 
-        // std::wstring wide_text = utf8_to_wstring(result->text);
-        // buffer_ += wide_text;
-
-        // if (split_chars.count(wide_text))
-        // {
-        //     std::cout << "split_chars"<< wstring_to_utf8(wide_text)<<std::endl;
-        //     if (!buffer_.empty())
-        //     {
-        //         auto response = client.request(wstring_to_utf8(buffer_));
-        //         std::cout << "Client received: " << response << std::endl;
-
-        //         buffer_.clear();
-        //     }
-        // }
-         std::wstring wide_text = utf8_to_wstring(result->text);
+        std::wstring wide_text = utf8_to_wstring(result->text);
         
         for (wchar_t c : wide_text) {
             buffer_ += c;
@@ -267,6 +180,7 @@ void callback(RKLLMResult *result, void *userdata, LLMCallState state)
     }
 }
 
+// 模型初始化
 void Init(const string &model_path)
 {
     
@@ -282,6 +196,7 @@ void Init(const string &model_path)
 
     param.max_new_tokens = 100;
     param.max_context_len = 256;
+
     param.skip_special_token = true;
     param.extend_param.base_domain_id = 0;
     param.extend_param.embed_flash = 1;
@@ -300,6 +215,7 @@ void Init(const string &model_path)
     }
 }
 
+//接收voice模块ASR处理的文字并进行LLM推理
 void receive_asr_data_and_process()
 {
     RKLLMInferParam rkllm_infer_params;

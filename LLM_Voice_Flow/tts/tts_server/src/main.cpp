@@ -15,7 +15,6 @@ zmq_component::ZmqServer status_server("tcp://*:6677");
 std::atomic<bool> first_msg(true);
 
 void synthesis_worker(DoubleMessageQueue &queue, TTSModel &model) {
-    // utils::set_realtime_priority(pthread_self(), 99);
 
     while (true) {
         std::string text = queue.pop_text();
