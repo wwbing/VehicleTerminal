@@ -5,6 +5,23 @@ LLM_Voice_Flow/tts/models/
 *.bin
 *.model
 *.weights
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+
+# 忽略敏感信息
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.env
+.env.local
+.env.production
+config.json
+secrets.json
+credentials.json
 
 # 忽略构建文件
 build/
@@ -12,13 +29,27 @@ build/
 *.o
 *.so
 *.a
+*.exe
+*.dll
+*.dylib
 
 # 忽略IDE文件
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
 # 忽略系统文件
 .DS_Store
 Thumbs.db
+
+# 忽略日志文件
+*.log
+logs/
+
+# 忽略临时文件
+tmp/
+temp/
+*.tmp
+*.temp
