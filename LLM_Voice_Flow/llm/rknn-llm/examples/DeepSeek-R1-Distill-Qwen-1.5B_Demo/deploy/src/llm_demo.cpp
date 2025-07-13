@@ -221,8 +221,8 @@ void callback(RKLLMResult *result, void *userdata, LLMCallState state)
         ===============================================================================================================*/
         if (result->last_hidden_layer.embd_size != 0 && result->last_hidden_layer.num_tokens != 0)
         {
-            int data_size = result->last_hidden_layer.embd_size * result->last_hidden_layer.num_tokens * sizeof(float);
-            printf("\ndata_size:%d", data_size);
+            size_t data_size = static_cast<size_t>(result->last_hidden_layer.embd_size) * static_cast<size_t>(result->last_hidden_layer.num_tokens) * sizeof(float);
+            printf("\ndata_size:%zu", data_size);
             std::ofstream outFile("last_hidden_layer.bin", std::ios::binary);
             if (outFile.is_open())
             {

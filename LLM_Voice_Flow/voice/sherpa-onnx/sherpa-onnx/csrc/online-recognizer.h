@@ -5,6 +5,7 @@
 #ifndef SHERPA_ONNX_CSRC_ONLINE_RECOGNIZER_H_
 #define SHERPA_ONNX_CSRC_ONLINE_RECOGNIZER_H_
 
+#include <array>
 #include <memory>
 #include <string>
 #include <vector>
@@ -171,8 +172,8 @@ class OnlineRecognizer {
 
   /** Decode a single stream. */
   void DecodeStream(OnlineStream *s) const {
-    OnlineStream *ss[1] = {s};
-    DecodeStreams(ss, 1);
+    std::array<OnlineStream *, 1> ss = {s};
+    DecodeStreams(ss.data(), 1);
   }
 
   /**
