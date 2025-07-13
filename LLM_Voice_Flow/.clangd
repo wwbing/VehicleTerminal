@@ -1,0 +1,10 @@
+Diagnostics:
+  Suppress:
+    - unused-includes
+    - unused-using-decl  # 忽略未使用的命名空间别名警告
+    - unused-alias-decls
+
+    - misc-unused-alias-decls  # 忽略未使用的命名空间别名声明警告
+    - misc-use-internal-linkage  # 忽略内部链接性警告
+    - bugprone-string-integer-assignment  # 忽略字符串整数赋值警告
+    - cppcoreguidelines-init-variables  # 忽略变量未初始化警告
