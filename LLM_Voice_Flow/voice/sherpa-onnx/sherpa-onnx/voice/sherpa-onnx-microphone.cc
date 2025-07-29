@@ -29,18 +29,16 @@ static bool stop             = false;
 static float mic_sample_rate = 16000;
 static bool wait             = false;
 
-// 音频录制回调函数：处理麦克风输入的音频数据并送入语音识别器
-static auto RecordCallback(const void *input_buffer, void * /*output_buffer*/,
-                           unsigned long frames_per_buffer,  // NOLINT
-                           const PaStreamCallbackTimeInfo * /*time_info*/, PaStreamCallbackFlags /*status_flags*/,
-                           void *user_data) -> int32_t
+// potraudio 回调函数：异步调用（20ms周期），该回调把 硬件音频 直接送入 zipformer的音频流
+static auto RecordCallback(const void *input_buffer, void *, unsigned long frames_per_buffer,
+                           const PaStreamCallbackTimeInfo *, PaStreamCallbackFlags, void *user_data) -> int32_t
 {
     // 实现音频采集和TTS播放的互斥
     if (!wait) {
         // PortAudio 回调要求 void* 通用指针，因此需要强制转换为语音识别流水线专用的 OnlineStream 对象指针
         auto *stream = reinterpret_cast<sherpa_onnx::OnlineStream *>(user_data);
 
-        // 音频数据注入
+        // 音频数据注入zipformer
         stream->AcceptWaveform(static_cast<int32_t>(mic_sample_rate), reinterpret_cast<const float *>(input_buffer),
                                frames_per_buffer);
     }
@@ -91,22 +89,22 @@ auto main(int32_t argc, char *argv[]) -> int32_t
     zmq_component::ZmqClient block_client("tcp://localhost:6677");  // 和TTS交互
 
     const char *kUsageMessage = R"usage(
-This program uses streaming models with microphone for speech recognition.
-Usage:
+    This program uses streaming models with microphone for speech recognition.
+    Usage:
 
-  ./bin/sherpa-onnx-microphone \
-    --tokens=/path/to/tokens.txt \
-    --encoder=/path/to/encoder.onnx \
-    --decoder=/path/to/decoder.onnx \
-    --joiner=/path/to/joiner.onnx \
-    --provider=cpu \
-    --num-threads=1 \
-    --decoding-method=greedy_search
+    ./bin/sherpa-onnx-microphone \
+        --tokens=/path/to/tokens.txt \
+        --encoder=/path/to/encoder.onnx \
+        --decoder=/path/to/decoder.onnx \
+        --joiner=/path/to/joiner.onnx \
+        --provider=cpu \
+        --num-threads=1 \
+        --decoding-method=greedy_search
 
-Please refer to
-https://k2-fsa.github.io/sherpa/onnx/pretrained_models/index.html
-for a list of pre-trained models to download.
-)usage";
+    Please refer to
+    https://k2-fsa.github.io/sherpa/onnx/pretrained_models/index.html
+    for a list of pre-trained models to download.
+    )usage";
 
     // 解析命令行参数和配置
     sherpa_onnx::ParseOptions po(kUsageMessage);
@@ -127,13 +125,14 @@ for a list of pre-trained models to download.
         return -1;
     }
 
-    // 创建语音识别器和音频流
+    // ==============根据配置信息创建 zipformer 的识别器和音频流==============
     sherpa_onnx::OnlineRecognizer recognizer(config);
     auto s = recognizer.CreateStream();
 
     sherpa_onnx::Microphone mic;
 
-    // 枚举和选择音频输入设备
+    // ========================== PortAudio 相关参数设置 ===================
+    // 使用portaudio枚举和选择音频输入设备
     PaDeviceIndex num_devices = Pa_GetDeviceCount();
     fprintf(stderr, "Num devices: %d\n", num_devices);
 
@@ -157,7 +156,6 @@ for a list of pre-trained models to download.
         fprintf(stderr, " %s %d %s\n", (i == device_index) ? "*" : " ", i, info->name);
     }
 
-    // PortAudio相关参数设置
     PaStreamParameters param;
     param.device = device_index;
 
@@ -186,8 +184,8 @@ for a list of pre-trained models to download.
                                 sample_rate,
                                 0,               // frames per buffer
                                 paClipOff,       // we won't output out of range samples
-                                RecordCallback,  // 注册音频录制回调函数
-                                s.get());
+                                RecordCallback,  // 注册音频录制回调函数，自动回调，20ms
+                                s.get());  // s.get()得到zipformer的音频流标记，作为RecordCallback的最后一个参数传递
     if (err != paNoError) {
         fprintf(stderr, "portaudio error: %s\n", Pa_GetErrorText(err));
         exit(EXIT_FAILURE);
@@ -207,8 +205,6 @@ for a list of pre-trained models to download.
     sherpa_onnx::Display display(30);
 
     while (!stop) {
-
-        //解析音频流数据
         while (recognizer.IsReady(s.get())) {
             recognizer.DecodeStream(s.get());
         }
@@ -222,13 +218,12 @@ for a list of pre-trained models to download.
                 规则3: 最大时长限制20s
         */
         bool is_endpoint = recognizer.IsEndpoint(s.get());
-        
-        if (is_endpoint && !config.model_config.paraformer.encoder.empty()) {
 
+        if (is_endpoint && !config.model_config.paraformer.encoder.empty()) {
             // 为流式Paraformer模型添加尾部填充
             std::vector<float> tail_paddings(static_cast<int>(1.0f * mic_sample_rate));
-            s->AcceptWaveform(static_cast<int32_t>(mic_sample_rate),
-                              tail_paddings.data(),
+
+            s->AcceptWaveform(static_cast<int32_t>(mic_sample_rate), tail_paddings.data(),
                               static_cast<int32_t>(tail_paddings.size()));
 
             while (recognizer.IsReady(s.get())) {
@@ -238,7 +233,7 @@ for a list of pre-trained models to download.
             text = recognizer.GetResult(s.get()).text;
         }
 
-        //实时显示识别结果
+        // 实时显示识别结果
         if (!text.empty() && last_text != text) {
             last_text = text;
 

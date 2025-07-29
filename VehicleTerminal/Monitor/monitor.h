@@ -1,36 +1,39 @@
 #ifndef MONITOR_H
 #define MONITOR_H
 
-#include <QMainWindow>
-#include <QLabel>
-#include <QImage>
-#include <QPushButton>
-#include <QHBoxLayout>
 #include <QCheckBox>
+#include <QHBoxLayout>
+#include <QImage>
+#include <QLabel>
+#include <QMainWindow>
+#include <QPushButton>
 #include <QTimer>
 
-#include "capture_thread.h"
 #include "ap3216.h"
+#include "capture_thread.h"
 #define MONITOR_COMMAND_CLOSE 0
 #define MONITOR_COMMAND_SHOW 1
-namespace Ui {
+namespace Ui
+{
 class Monitor;
 }
 
 class Monitor : public QMainWindow
 {
     Q_OBJECT
-public:
-    static Monitor* getInstance();
-private:
+  public:
+    static Monitor *getInstance();
+
+  private:
     Monitor(QWidget *parent = nullptr);
-    static Monitor* monitor;
+    static Monitor *monitor;
     ~Monitor();
 
-private:
+  private:
     Ui::Monitor *ui;
     void restart();
-private:
+
+  private:
     QTimer *DisUpdate_Timer;
 
     /* 用于显示捕获到的图像 */
@@ -54,10 +57,11 @@ private:
 
     /* 重写大小事件 */
     void resizeEvent(QResizeEvent *event) override;
-public :
+
+  public:
     void myStart();
     void myStop();
-public slots:
+  public slots:
     /* 显示图像 */
     void showImage(QImage);
     /* 开始采集按钮被点击 */
@@ -65,6 +69,5 @@ public slots:
     void on_timer_timeout();
     void on_handleCommand(int);
 };
-
 
 #endif // MONITOR_H

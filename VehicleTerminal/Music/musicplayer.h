@@ -2,16 +2,17 @@
 #define MUSICPLAYER_H
 
 #include <Music/searchmusic.h>
+#include <QDir>
+#include <QFile>
+#include <QLocale>
 #include <QMainWindow>
 #include <QMediaPlayer>
 #include <QMediaPlaylist>
-#include <QDir>
-#include <QFile>
+#include <QMessageBox>
+#include <QNetworkReply>
 #include <QUrl>
 #include <QVector>
-#include <QNetworkReply>
-#include <QMessageBox>
-#include <QLocale>
+
 
 #define MUSIC_COMMAND_CLOSE 0
 #define MUSIC_COMMAND_SHOW 1
@@ -21,7 +22,8 @@
 #define MUSIC_COMMAND_PLAY 4
 #define MUSIC_COMMAND_PAUSE 5
 
-namespace Ui {
+namespace Ui
+{
 class MusicPlayer;
 }
 
@@ -37,17 +39,17 @@ class MusicPlayer : public QMainWindow
 {
     Q_OBJECT
 
-public:
+  public:
     explicit MusicPlayer(QWidget *parent = nullptr);
     ~MusicPlayer();
     QString LocalSongsPath = "/myMusic";
     void ScanLocalSongs();
     void mediaPlayerInit();
 
-private slots:
+  private slots:
 
     void on_pBtn_OpenSearchWin_clicked();
-    void AddMusicFromUrl(QString name,QString UrlPath);
+    void AddMusicFromUrl(QString name, QString UrlPath);
 
     void on_listWidget_currentRowChanged(int currentRow);
 
@@ -72,9 +74,10 @@ private slots:
     void on_DownSong(QNetworkReply *reply);
 
     void on_pushButton_clicked();
-public slots:
+  public slots:
     void on_handleCommand(int);
-private:
+
+  private:
     class SearchMusic *searchMusicWin;
     Ui::MusicPlayer *ui;
     QMediaPlayer *musicPlayer;
@@ -86,7 +89,6 @@ private:
     QNetworkRequest First_request;
     QNetworkAccessManager Second_netManager;
     QNetworkRequest Second_request;
-
 };
 
 #endif // MUSICPLAYER_H

@@ -11,4 +11,4 @@ public:
     static std::vector<std::string> process_input_text(const std::string &input);
 };
 
-#endif // TEXT_PROCESSOR_H
+#endif  // TEXT_PROCESSOR_H

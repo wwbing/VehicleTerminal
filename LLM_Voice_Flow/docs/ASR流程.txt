@@ -1,0 +1,33 @@
+ASR阶段完整流程：
+LLM_Voice_Flow/voice/sherpa-onnx/sherpa-onnx/voice/sherpa-onnx-microphone.cc
+LLM_Voice_Flow/llm/rknn-llm/examples/DeepSeek-R1-Distill-Qwen-1.5B_Demo/deploy/src/llm_demo.cpp
+
+初始化阶段：
+    PortAudio扫描麦克风设备
+    根据配置选择设备和参数
+    创建zipformer识别器和音频流
+    绑定回调函数
+
+实时采集阶段（异步）：
+    PortAudio每20ms调用回调（自动调用）
+    回调函数将硬件音频数据传递给zipformer
+
+识别处理阶段（同步）：
+    主循环持续处理缓存音频
+    zipformer进行流式语音识别
+    实时显示部分识别结果
+
+分句处理阶段：
+    通过VAD进行端点检测
+    检测到完整句子后发送给LLM
+    重置识别器准备下一句
+
+互斥控制：
+    TTS播放时暂停音频处理
+    避免识别和播放冲突
+
+关键技术点
+    异步采集 + 同步处理：回调异步采集，主循环同步识别
+    流式识别：不需要等整句说完就能看到部分结果
+    端点检测：智能判断句子边界
+    互斥机制：避免录音和播放冲突

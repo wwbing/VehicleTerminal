@@ -14,23 +14,26 @@ zmq_component::ZmqServer server("tcp://*:7777");
 zmq_component::ZmqServer status_server("tcp://*:6677");
 std::atomic<bool> first_msg(true);
 
-void synthesis_worker(DoubleMessageQueue &queue, TTSModel &model) {
-
+// tts文本转语音线程
+void synthesis_worker(DoubleMessageQueue &queue, TTSModel &model)
+{
     while (true) {
         std::string text = queue.pop_text();
         if (text.empty()) break;
 
         if (text.find("END") != std::string::npos) {
-            first_msg = true;
+            first_msg      = true;
             size_t end_pos = text.find("END");
-            text = text.substr(0, end_pos);
+            text           = text.substr(0, end_pos);
         }
 
         int32_t audio_len = 0;
         if (!text.empty()) {
             std::cout << "[TTS infer] Inferring text: " << text << std::endl;
-            int16_t* wavData = model.infer(text, audio_len);
-            
+
+            // 推理
+            int16_t *wavData = model.infer(text, audio_len);
+
             if (wavData && audio_len > 0) {
                 auto audio_data = std::make_unique<int16_t[]>(audio_len);
                 memcpy(audio_data.get(), wavData, audio_len * sizeof(int16_t));
@@ -44,27 +47,28 @@ void synthesis_worker(DoubleMessageQueue &queue, TTSModel &model) {
     }
 }
 
-void playback_worker(DoubleMessageQueue &queue, AudioPlayer &player) {
+void playback_worker(DoubleMessageQueue &queue, AudioPlayer &player)
+{
     while (true) {
         auto msg = queue.pop_audio();
         if (msg.data == nullptr) break;
-        
+
         player.play(msg.data.get(), msg.length * sizeof(int16_t), 1.0f);
-        
+
         if (msg.is_last) {
             status_server.send("[tts -> voice]play end success");
         }
     }
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <model_path>" << std::endl;
         return 1;
     }
 
     try {
-    
         TTSModel model(argv[1]);
         AudioPlayer player;
         DoubleMessageQueue queue;
@@ -72,6 +76,7 @@ int main(int argc, char **argv) {
         std::thread synthesis_thread(synthesis_worker, std::ref(queue), std::ref(model));
         std::thread playback_thread(playback_worker, std::ref(queue), std::ref(player));
 
+        // 主线程中接收LLM的推理结果放到文本缓冲队列中
         while (true) {
             if (first_msg) {
                 std::string req = status_server.receive();
@@ -84,8 +89,6 @@ int main(int argc, char **argv) {
             std::cout << "[llm -> tts] received: " << text << std::endl;
 
             if (!text.empty() && text.find("<think>") == std::string::npos) {
-              
-    
                 queue.push_text(text);
             }
         }

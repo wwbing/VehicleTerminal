@@ -21,17 +21,9 @@ LLMHandle llmHandle = nullptr;
 zmq_component::ZmqServer server;
 zmq_component::ZmqClient client("tcp://localhost:7777");
 
-//截断后的字符串直接传给TTS进行处理，加快首响应速度
-std::wstring buffer_; 
-static const std::set<wchar_t> split_chars = {
-    L'：',   
-    L'，',   
-    L'。',  
-    L'\n',   
-    L'；',  
-    L'！',  
-    L'？'   
-};
+// 截断后的字符串直接传给TTS进行处理，加快首响应速度
+std::wstring buffer_;
+static const std::set<wchar_t> split_chars = {L'：', L'，', L'。', L'\n', L'；', L'！', L'？'};
 
 /*
     utf8和宽字符转换原理：
@@ -40,30 +32,25 @@ static const std::set<wchar_t> split_chars = {
 */
 bool is_valid_utf8_continuation(uint8_t c)
 {
-    return (c & 0xC0) == 0x80; 
+    return (c & 0xC0) == 0x80;
 }
 
-
+// 去除结果中的思考部分，只发送结果部分 
 std::wstring extract_after_think(const std::wstring &input)
 {
     const std::wstring start_tag = L"<think>";
-    const std::wstring end_tag = L"</think>";
+    const std::wstring end_tag   = L"</think>";
 
     size_t start_pos = input.find(start_tag);
-    size_t end_pos = input.find(end_tag);
+    size_t end_pos   = input.find(end_tag);
 
     std::wstring result;
 
-    if (start_pos != std::wstring::npos && end_pos != std::wstring::npos && end_pos > start_pos)
-    {
+    if (start_pos != std::wstring::npos && end_pos != std::wstring::npos && end_pos > start_pos) {
         result = input.substr(start_pos + start_tag.length(), end_pos - start_pos - start_tag.length());
-    }
-    else if (end_pos != std::wstring::npos)
-    {
+    } else if (end_pos != std::wstring::npos) {
         result = input.substr(end_pos + end_tag.length());
-    }
-    else
-    {
+    } else {
         result = input;
     }
 
@@ -72,10 +59,8 @@ std::wstring extract_after_think(const std::wstring &input)
 
     // 过滤处理
     std::wstring filtered;
-    for (wchar_t c : result)
-    {
-        if (punct.find(c) == std::wstring::npos)
-        {
+    for (wchar_t c : result) {
+        if (punct.find(c) == std::wstring::npos) {
             filtered += c;
         }
     }
@@ -96,81 +81,71 @@ std::string wstring_to_utf8(const std::wstring &str)
 }
 void exit_handler(int signal)
 {
-    if (llmHandle != nullptr)
-    {
+    if (llmHandle != nullptr) {
         {
             cout << "程序即将退出" << endl;
             LLMHandle _tmp = llmHandle;
-            llmHandle = nullptr;
+            llmHandle      = nullptr;
             rkllm_destroy(_tmp);
         }
     }
     exit(signal);
 }
 
-void send_response(const std::wstring& text) {
+void send_response(const std::wstring &text)
+{
     std::string response_str = wstring_to_utf8(extract_after_think(text));
-    auto response = client.request(response_str);
+    auto response            = client.request(response_str);
     std::cout << "[tts -> llm] received : " << response << std::endl;
 }
 
-//模型通过该回调函数吐字
+// 模型通过该回调函数吐字
 void callback(RKLLMResult *result, void *userdata, LLMCallState state)
 {
-
-    if (state == RKLLM_RUN_FINISH)
-    {
-        if (!buffer_.empty())
-        {
+    if (state == RKLLM_RUN_FINISH) {
+        if (!buffer_.empty()) {
             std::string response_str = wstring_to_utf8(extract_after_think(buffer_)) + " END";
-            auto response = client.request(response_str);
+            auto response            = client.request(response_str);
             std::cout << "[tts -> llm] received: " << response << std::endl;
             buffer_.clear();
-        }
-        else
-        {
+        } else {
             auto response = client.request("END");
             std::cout << "[tts -> llm] received: " << response << std::endl;
         }
 
         printf("\n");
-    }
-    else if (state == RKLLM_RUN_ERROR)
-    {
+    } else if (state == RKLLM_RUN_ERROR) {
         printf("\\run error\n");
-    }
-    else if (state == RKLLM_RUN_NORMAL)
-    {
+    } else if (state == RKLLM_RUN_NORMAL) {
         /* ================================================================================================================
         若使用GET_LAST_HIDDEN_LAYER功能,callback接口会回传内存指针:last_hidden_layer,token数量:num_tokens与隐藏层大小:embd_size
         通过这三个参数可以取得last_hidden_layer中的数据
         注:需要在当前callback中获取,若未及时获取,下一次callback会将该指针释放
         ===============================================================================================================*/
-        if (result->last_hidden_layer.embd_size != 0 && result->last_hidden_layer.num_tokens != 0)
-        {
-            size_t data_size = static_cast<size_t>(result->last_hidden_layer.embd_size) * static_cast<size_t>(result->last_hidden_layer.num_tokens) * sizeof(float);
+        if (result->last_hidden_layer.embd_size != 0 && result->last_hidden_layer.num_tokens != 0) {
+            size_t data_size = static_cast<size_t>(result->last_hidden_layer.embd_size) *
+                               static_cast<size_t>(result->last_hidden_layer.num_tokens) * sizeof(float);
             printf("\ndata_size:%zu", data_size);
             std::ofstream outFile("last_hidden_layer.bin", std::ios::binary);
-            if (outFile.is_open())
-            {
+            if (outFile.is_open()) {
                 outFile.write(reinterpret_cast<const char *>(result->last_hidden_layer.hidden_states), data_size);
                 outFile.close();
                 std::cout << "Data saved to output.bin successfully!" << std::endl;
-            }
-            else
-            {
+            } else {
                 std::cerr << "Failed to open the file for writing!" << std::endl;
             }
         }
 
         printf("%s", result->text);
 
+        // llm推理是用的utf8，推理后的文本结果转成宽字符
         std::wstring wide_text = utf8_to_wstring(result->text);
-        
+
         for (wchar_t c : wide_text) {
             buffer_ += c;
 
-            if (split_chars.count(c)) {
+            // 这里是检测到分句符号才执行 发送命令
+            if (split_chars.count(c)) { 
                 if (!buffer_.empty()) {
                     send_response(buffer_);
                     buffer_.clear();
@@ -183,43 +158,39 @@ void callback(RKLLMResult *result, void *userdata, LLMCallState state)
 // 模型初始化
 void Init(const string &model_path)
 {
-    
     RKLLMParam param = rkllm_createDefaultParam();
     param.model_path = model_path.c_str();
 
-    param.top_k = 1;
-    param.top_p = 0.95;
-    param.temperature = 0.8;
-    param.repeat_penalty = 1.1;
+    param.top_k             = 1;
+    param.top_p             = 0.95;
+    param.temperature       = 0.8;
+    param.repeat_penalty    = 1.1;
     param.frequency_penalty = 0.0;
-    param.presence_penalty = 0.0;
+    param.presence_penalty  = 0.0;
 
-    param.max_new_tokens = 100;
+    param.max_new_tokens  = 100;
     param.max_context_len = 256;
 
-    param.skip_special_token = true;
-    param.extend_param.base_domain_id = 0;
-    param.extend_param.embed_flash = 1;
-    param.extend_param.enabled_cpus_num = 2;
+    param.skip_special_token             = true;
+    param.extend_param.base_domain_id    = 0;
+    param.extend_param.embed_flash       = 1;
+    param.extend_param.enabled_cpus_num  = 2;
     param.extend_param.enabled_cpus_mask = CPU0 | CPU2;
 
     int ret = rkllm_init(&llmHandle, &param, callback);
-    if (ret == 0)
-    {
+    if (ret == 0) {
         printf("rkllm init success\n");
-    }
-    else
-    {
+    } else {
         printf("rkllm init failed\n");
         exit_handler(-1);
     }
 }
 
-//接收voice模块ASR处理的文字并进行LLM推理
+// 接收voice模块ASR处理的文字并进行LLM推理
 void receive_asr_data_and_process()
 {
     RKLLMInferParam rkllm_infer_params;
-    memset(&rkllm_infer_params, 0, sizeof(RKLLMInferParam)); 
+    memset(&rkllm_infer_params, 0, sizeof(RKLLMInferParam));
 
     rkllm_infer_params.mode = RKLLM_INFER_GENERATE;
 
@@ -228,27 +199,25 @@ void receive_asr_data_and_process()
 
     RKLLMInput rkllm_input;
 
-    while (true)
-    {
+    while (true) {
         std::string input_str;
 
         rkllm_input.input_type = RKLLM_INPUT_PROMPT;
-        input_str = server.receive();
+        input_str              = server.receive();
         std::cout << "[voice -> llm] received: " << input_str << std::endl;
         server.send("llm sucess reply !!!");
         rkllm_input.prompt_input = (char *)input_str.c_str();
 
-        // 若要使用普通推理功能,则配置rkllm_infer_mode为RKLLM_INFER_GENERATE或不配置参数
+        // 启动LLM推理，这里会触发callback（rkllm_infer_params这个函数内部会多次调用callback）
         rkllm_run(llmHandle, &rkllm_input, &rkllm_infer_params, NULL);
     }
 }
 
 int main(int argc, char **argv)
 {
-    setlocale(LC_ALL, "en_US.UTF-8"); 
+    setlocale(LC_ALL, "en_US.UTF-8");
 
-    if (argc < 2)
-    {
+    if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " model_path\n";
         return 1;
     }

@@ -1,53 +1,54 @@
 #ifndef SPEECHRECOGNITION_H
 #define SPEECHRECOGNITION_H
 
-#include <QObject>
-#include <QThread>
-#include <QAudioRecorder>
 #include <QAudioProbe>
-#include <QNetworkReply>
-#include <QNetworkRequest>
-#include <QNetworkAccessManager>
+#include <QAudioRecorder>
 #include <QDate>
-#include <QTime>
-#include <QUrl>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <signal.h>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QObject>
+#include <QThread>
+#include <QTime>
 #include <QTimer>
+#include <QUrl>
+#include <signal.h>
 class SpeechRecognition : public QObject
 {
     Q_OBJECT
-public:
+  public:
     SpeechRecognition();
 
     // QThread interface
-private:
+  private:
     void initAudioRecord();
     void initKeyRead();
     int readKeyValue();
     void initAsyncHandle();
-signals:
+  signals:
     void MessageFromAsrThread(QString str);
     void RecordFinished();
-private slots:
+  private slots:
     void timer_timerout();
     static void getSpeechResult(QNetworkReply *reply);
 
-private:
+  private:
     QAudioRecorder *m_audioRecorder = nullptr;
     QTimer *timer;
     int hasRecord = 0;
-    QList<QVariant>devicesVar;
-    QList<QVariant>codecsVar;
-    QList<QVariant>containersVar;
-    QList<QVariant>sampleRateVar;
-    QList<QVariant>channelsVar;
-    QList<QVariant>qualityVar;
-    QList<QVariant>bitratesVar;
-public:
+    QList<QVariant> devicesVar;
+    QList<QVariant> codecsVar;
+    QList<QVariant> containersVar;
+    QList<QVariant> sampleRateVar;
+    QList<QVariant> channelsVar;
+    QList<QVariant> qualityVar;
+    QList<QVariant> bitratesVar;
+
+  public:
     int key_fd;
     void startSpeechRecognition();
     void startRecord();

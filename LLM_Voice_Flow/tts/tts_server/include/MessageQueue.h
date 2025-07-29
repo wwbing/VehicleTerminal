@@ -18,10 +18,10 @@ class DoubleMessageQueue {
 public:
     void push_text(const std::string &msg);
     std::string pop_text();
-    
+
     void push_audio(std::unique_ptr<int16_t[]> data, size_t length, bool is_last = false);
     AudioMessage pop_audio();
-    
+
     void stop();
 
 private:
@@ -36,4 +36,4 @@ private:
     std::atomic<bool> stop_{false};
 };
 
-#endif // MESSAGE_QUEUE_H
+#endif  // MESSAGE_QUEUE_H
